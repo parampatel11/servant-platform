@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "../context/AuthContext";
 
 // Initialize Plus Jakarta Sans
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={jakarta.className}>
         <AuthProvider>
           {children}
+          <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
         </AuthProvider>
       </body>
     </html>
