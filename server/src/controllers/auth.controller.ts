@@ -198,3 +198,16 @@ export const logout = async (req: Request, res: Response)=>{
         CatchError(err, res, "Logout failed")
     }
 }
+
+export const gotMe = async ( req: SessionInterface, res: Response)=>{
+    try{
+        if(!req.session){
+            return res.status(401).json({message:"Unauthorized"})
+        }
+
+        res.status(200).json({user: req.session})
+    }
+    catch(err){
+        CatchError(err, res, "Internal server error")
+    }
+}

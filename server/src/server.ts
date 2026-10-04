@@ -20,6 +20,7 @@ app.use(cors({
     origin:"http://localhost:3000",
     credentials: true
 }))
+app.use(cookieParser());
 
 mongoose.connect(process.env.MONGO_URI!)
 .then(()=>{
