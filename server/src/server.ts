@@ -3,8 +3,11 @@ dotenv.config()
 
 import express from "express"
 import cors from "cors"
+import cookieParser from "cookie-parser"
+import mongoose from "mongoose"
+import authRouter from "./routes/auth.routes"
 
-const PORT = process.env.PORT || 8080
+const PORT = process.env.PORT || 8000
 
 const app = express()
 app.listen(PORT,()=>{
@@ -12,8 +15,21 @@ app.listen(PORT,()=>{
 })
 
 app.use(express.json())
-app.use(cors())
+app.use(express.urlencoded({extended:true}))
+app.use(cors({
+    origin:"http://localhost:3000",
+    credentials: true
+}))
 
+mongoose.connect(process.env.MONGO_URI!)
+.then(()=>{
+    console.log("Database connected successfully")
+})
+.catch(()=>{
+    console.log("Database connection failed")
+})
+
+app.use("/api/auth",authRouter)
 
 app.get("/",(req,res)=>{
     res.json({message:"Shiftserve API is running!"})

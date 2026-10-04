@@ -110,7 +110,7 @@ export const login = async (req: Request, res: Response)=>{
         )
 
         res.cookie("accessToken", accessToken, getOptions("at"))
-        res.cookie("refreshToken", accessToken, getOptions("rt"))
+        res.cookie("refreshToken", refreshToken, getOptions("rt"))
         res.json({message: "Login success", role: user.role})
     }
     catch(err:unknown){
