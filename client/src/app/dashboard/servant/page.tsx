@@ -8,6 +8,12 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
+// NEW IMPORTS
+import ServantSearch from "@/src/components/ServantSearch";
+import ServantPost from "@/src/components/ServantPost";
+import ServantRequests from "@/src/components/ServantRequests";
+import ServantSupport from "@/src/components/ServantSupport";
+
 export default function ServantDashboard() {
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<any>(null);
@@ -86,7 +92,6 @@ export default function ServantDashboard() {
                             </div>
                         </div>
 
-                        {/* Compact Subscription Button */}
                         <div className="w-full mt-auto pt-5">
                             <button 
                                 onClick={() => setIsSubModalOpen(true)}
@@ -104,7 +109,6 @@ export default function ServantDashboard() {
 
                 {/* RIGHT SIDE: Streamlined Hero Banner */}
                 <div className="w-full lg:w-[70%] bg-zinc-900 rounded-2xl shadow-sm border border-zinc-800 p-6 md:p-8 relative overflow-hidden flex flex-col justify-center">
-                    {/* Subtle Background Gradients */}
                     <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
                         <div className="absolute -top-20 -right-20 w-72 h-72 bg-yellow-500 rounded-full blur-[80px]"></div>
                         <div className="absolute -bottom-20 right-1/4 w-64 h-64 bg-orange-600 rounded-full blur-[80px]"></div>
@@ -125,7 +129,6 @@ export default function ServantDashboard() {
                             </p>
                         </div>
 
-                        {/* Interactive Action Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                             <div className="bg-white/5 border border-white/10 p-3.5 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-yellow-500/30 hover:-translate-y-1 hover:shadow-[0_4px_20px_rgba(234,179,8,0.1)] cursor-pointer group">
                                 <Briefcase size={20} className="text-yellow-400 mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:text-yellow-300" />
@@ -152,6 +155,12 @@ export default function ServantDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* SEAMLESS SCROLLING SECTIONS */}
+            <ServantSearch />
+            <ServantPost />
+            <ServantRequests />
+            <ServantSupport />
 
             {/* COMPACT SUBSCRIPTION MODAL */}
             {isSubModalOpen && (
