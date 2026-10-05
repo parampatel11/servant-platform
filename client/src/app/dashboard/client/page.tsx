@@ -7,6 +7,10 @@ import {
     Search, ShieldCheck, Zap, Star, Loader2, ArrowRight
 } from "lucide-react";
 import toast from "react-hot-toast";
+import ClientSearch from "@/src/components/ClientSearch";
+import ClientPost from "@/src/components/ClientPost";
+import ClientRequests from "@/src/components/ClientRequests";
+import ClientSupport from "@/src/components/ClientSupport";
 
 export default function ClientDashboard() {
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);
@@ -152,6 +156,12 @@ export default function ClientDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Seamless Worker Search Section */}
+            <ClientSearch />
+            <ClientPost />
+            <ClientRequests />
+            <ClientSupport />
 
             {/* COMPACT SUBSCRIPTION MODAL */}
             {isSubModalOpen && (
