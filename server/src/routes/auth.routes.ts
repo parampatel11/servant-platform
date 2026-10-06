@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signup, login , logout, refreshToken, getSession, updateProfilePicture, gotMe } from "../controllers/auth.controller";
+import { signup, login , logout, refreshToken, getSession, updateProfilePicture, gotMe, onboardServant } from "../controllers/auth.controller";
 import AuthMiddleware from "../middlewares/auth.middleware";
 import { uploadMiddleware } from "../middlewares/upload.middleware";
 
@@ -8,6 +8,7 @@ const authRouter = Router()
 authRouter.post("/signup",uploadMiddleware.single("image"),signup)
 authRouter.post("/login",login)
 authRouter.post("/logout",logout)
+authRouter.post("/onboard-servant", AuthMiddleware, onboardServant)
 authRouter.get("/me",AuthMiddleware,gotMe)
 authRouter.get("/session",getSession)
 authRouter.get("/refresh",AuthMiddleware,refreshToken)
