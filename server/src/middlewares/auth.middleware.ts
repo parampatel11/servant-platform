@@ -9,7 +9,8 @@ export interface PayloadInterface{
     email: string,
     mobile: string,
     role: string,
-    image: string | null
+    image: string | null,
+    isOnBoarded?: boolean
 }
 
 export interface SessionInterface extends Request {
@@ -32,7 +33,8 @@ const AuthMiddleware = async (req: SessionInterface, res: Response, next: NextFu
             mobile: payload.mobile,
             fullname: payload.fullname,
             role: payload.role,
-            image: payload.image ?? null
+            image: payload.image ?? null,
+            isOnBoarded: payload.isOnBoarded
         }
 
         next();
