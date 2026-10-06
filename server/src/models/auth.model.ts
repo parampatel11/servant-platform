@@ -35,6 +35,35 @@ const authSchema = new Schema({
         enum: ["client","servant","admin"],
         required: true
     },
+    isOnBoarded:{
+        type: Boolean,
+        default: false
+    },
+    mainRoad:{
+        type: String,
+        trim: true
+    },
+    subRoad:{
+        type: String,
+        trim: true
+    },
+    skills:{
+        type: [String],
+        default: []
+    },
+    maxHours:{
+        type: Number,
+        enum: [1, 2, 3]
+    },
+    pricingTier:{
+        oneHour:{type: Number},
+        twoHours:{type: Number},
+        threeHours:{type: Number}
+    },
+    address:{
+        type: String,
+        trim: true
+    },
     refreshToken:{
         type: String,
         default: null
