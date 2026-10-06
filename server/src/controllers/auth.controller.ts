@@ -95,6 +95,7 @@ export const login = async (req: Request, res: Response)=>{
             mobile: user.mobile,
             role: user.role,
             image: user.image ?? null,
+            isOnBoarded: user.isOnBoarded
         }
 
         const {accessToken, refreshToken} = generateToken(payload)
@@ -205,9 +206,59 @@ export const gotMe = async ( req: SessionInterface, res: Response)=>{
             return res.status(401).json({message:"Unauthorized"})
         }
 
+        const user = await AuthModel.findById(req.session.id).select("-password -refreshToken")
+        if(!user){
+            throw TryError("User not found", 404)
+        }
         res.status(200).json({user: req.session})
     }
     catch(err){
         CatchError(err, res, "Internal server error")
+    }
+}
+
+export const onboardServant = async (req: SessionInterface, res: Response) => {
+    try {
+        if (!req.session || req.session.role !== "servant") {
+            throw TryError("Unauthorized. Only servants can onboard.", 403);
+        }
+
+        const { mainRoad, subRoad, skills, maxHours, gender, birthYear } = req.body;
+
+        let oneHour = 200;
+        let twoHours = 450;
+        let threeHours = 700;
+
+        if (skills && Array.isArray(skills) && skills.length > 1) {
+            oneHour = Math.round(oneHour * 1.2);
+            twoHours = Math.round(twoHours * 1.2);
+            threeHours = Math.round(threeHours * 1.2);
+        }
+
+        const pricingTier = { oneHour, twoHours, threeHours };
+
+        const updatedUser = await AuthModel.findByIdAndUpdate(
+            req.session.id,
+            {
+                $set: {
+                    isOnBoarded: true,
+                    mainRoad,
+                    subRoad,
+                    skills,
+                    maxHours,
+                    pricingTier,
+                    gender,
+                    birthYear
+                }
+            },
+            { new: true }
+        ).select("-password -refreshToken");
+
+        res.status(200).json({ 
+            message: "Onboarding complete", 
+            user: updatedUser 
+        });
+    } catch (err) {
+        CatchError(err, res, "Failed to complete onboarding");
     }
 }
