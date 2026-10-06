@@ -6,6 +6,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 import mongoose from "mongoose"
 import authRouter from "./routes/auth.routes"
+import clientRouter from "./routes/client.routes"
 
 const PORT = process.env.PORT || 8000
 
@@ -31,6 +32,7 @@ mongoose.connect(process.env.MONGO_URI!)
 })
 
 app.use("/api/auth",authRouter)
+app.use("/api/client",clientRouter)
 
 app.get("/",(req,res)=>{
     res.json({message:"Shiftserve API is running!"})
