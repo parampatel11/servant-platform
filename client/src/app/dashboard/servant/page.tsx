@@ -8,13 +8,14 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-// NEW IMPORTS
 import ServantSearch from "@/src/components/ServantSearch";
 import ServantPost from "@/src/components/ServantPost";
 import ServantRequests from "@/src/components/ServantRequests";
 import ServantSupport from "@/src/components/ServantSupport";
+import ServantOnboardingModal from "@/src/components/ServantOnboardingModal";
 
 export default function ServantDashboard() {
+    console.log("THE MODAL COMPONENT IS TRYING TO RENDER!");
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -54,8 +55,14 @@ export default function ServantDashboard() {
         );
     }
 
+    console.log("FULL USER STATE:", userProfile);
+    console.log("IS ONBOARDED VALUE:", userProfile?.isOnBoarded);
+
     return (
         <div className="w-full">
+            {userProfile && userProfile.isOnBoarded === false && (
+                <ServantOnboardingModal onComplete={(updatedUser) => setUserProfile(updatedUser)} />
+            )}
             <div className="flex flex-col lg:flex-row gap-5">
                 
                 {/* LEFT SIDE: Compact Profile Section */}
