@@ -210,7 +210,7 @@ export const gotMe = async ( req: SessionInterface, res: Response)=>{
         if(!user){
             throw TryError("User not found", 404)
         }
-        res.status(200).json({user: req.session})
+        res.status(200).json({user: user})
     }
     catch(err){
         CatchError(err, res, "Internal server error")
