@@ -26,7 +26,7 @@ const paymentSchema = new Schema({
         trim: true,
         default: null
     },
-    amout:{
+    amount:{
         type: Number,
         required: true
     },
