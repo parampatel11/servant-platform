@@ -8,10 +8,14 @@ import mongoose from "mongoose"
 import authRouter from "./routes/auth.routes"
 import clientRouter from "./routes/client.routes"
 import paymentRouter from "./routes/payment.routes"
+import bookingRouter from "./routes/booking.routes"
 
 const PORT = process.env.PORT || 8000
 
 const app = express()
+app.listen(PORT,()=>{
+    console.log(`Server is running on ${PORT}`)
+})
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
@@ -32,11 +36,8 @@ mongoose.connect(process.env.MONGO_URI!)
 app.use("/api/auth",authRouter)
 app.use("/api/client",clientRouter)
 app.use("/api/payment", paymentRouter)
+app.use("/api/booking", bookingRouter)
 
 app.get("/",(req,res)=>{
     res.json({message:"Shiftserve API is running!"})
-})
-
-app.listen(PORT,()=>{
-    console.log(`Server is running on ${PORT}`)
 })
