@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, MapPin, Filter, ShieldCheck, ChevronDown, Loader2, ChevronLeft, ChevronRight, Hash, X, CheckCircle2, Clock, Wallet, Briefcase, Sparkles } from "lucide-react";
+import { Search, MapPin, ShieldCheck, ChevronDown, Loader2, ChevronLeft, ChevronRight, Hash, X, CheckCircle2, Clock, Wallet, Briefcase, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
+import CheckoutButton from "./CheckoutButton";
 
 const AHMEDABAD_LOCATIONS = ["SG Highway", "CG Road", "Ashram Road", "Ring Road", "Relief Road"];
 
@@ -11,19 +12,17 @@ export default function ClientSearch() {
     const [workers, setWorkers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
-    // Pagination & Filter State
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [jumpPage, setJumpPage] = useState("");
     
-    // Search & Filter State
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [selectedLocation, setSelectedLocation] = useState("");
     
-    // Booking Modal State
     const [bookingWorker, setBookingWorker] = useState<any | null>(null);
     const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+    const [selectedDuration, setSelectedDuration] = useState<1 | 2 | 3>(1);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -183,7 +182,6 @@ export default function ClientSearch() {
                                         <div className="flex justify-between items-start mb-1">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="text-lg font-bold text-slate-900 truncate capitalize">{worker.fullname}</h3>
-                                                {/* NEW: Top Match Badge assigned by Backend Aggregation */}
                                                 {worker.matchScore >= 2 && (
                                                     <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                                                         <Sparkles size={10} /> Top Match
@@ -217,6 +215,7 @@ export default function ClientSearch() {
                                         onClick={() => {
                                             setBookingWorker(worker);
                                             setSelectedTasks([]);
+                                            setSelectedDuration(1);
                                         }}
                                         className="bg-slate-900 hover:bg-green-500 text-white hover:text-slate-900 font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg active:scale-95"
                                     >
@@ -355,30 +354,79 @@ export default function ClientSearch() {
                             
                             <div className="grid grid-cols-3 gap-3 mb-8">
                                 {[
-                                    { hrs: '1 Hour', price: bookingWorker.pricingTier?.oneHour || 200 },
-                                    { hrs: '2 Hours', price: bookingWorker.pricingTier?.twoHours || 450 },
-                                    { hrs: '3 Hours', price: bookingWorker.pricingTier?.threeHours || 700 }
-                                ].map((tier, idx) => (
-                                    <div key={idx} className="bg-slate-50 border border-gray-100 p-3 rounded-2xl text-center">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{tier.hrs}</p>
-                                        <p className="text-lg font-bold text-slate-800">₹{tier.price}</p>
-                                    </div>
+                                    { hrs: 1, label: '1 Hour', price: bookingWorker.pricingTier?.oneHour || 200 },
+                                    { hrs: 2, label: '2 Hours', price: bookingWorker.pricingTier?.twoHours || 450 },
+                                    { hrs: 3, label: '3 Hours', price: bookingWorker.pricingTier?.threeHours || 700 }
+                                ].map((tier) => (
+                                    <button
+                                        key={tier.hrs}
+                                        type="button"
+                                        onClick={() => setSelectedDuration(tier.hrs as 1 | 2 | 3)}
+                                        className={`p-3 rounded-2xl text-center border-2 transition-all ${
+                                            selectedDuration === tier.hrs
+                                            ? 'border-green-500 bg-green-50/50 shadow-sm'
+                                            : 'bg-slate-50 border-gray-100 hover:border-green-200'
+                                        }`}
+                                    >
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                                            selectedDuration === tier.hrs ? 'text-green-600' : 'text-gray-400'
+                                        }`}>
+                                            {tier.label}
+                                        </p>
+                                        <p className={`text-lg font-bold ${
+                                            selectedDuration === tier.hrs ? 'text-green-700' : 'text-slate-800'
+                                        }`}>
+                                            ₹{tier.price}
+                                        </p>
+                                    </button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="p-6 border-t border-gray-100 bg-white shrink-0">
-                            <button 
-                                type="button"
-                                disabled={selectedTasks.length === 0}
-                                className="w-full bg-slate-900 hover:bg-green-500 disabled:bg-gray-100 disabled:text-gray-400 text-white disabled:border-transparent font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg disabled:shadow-none text-base active:scale-95 group"
-                            >
-                                {selectedTasks.length === 0 ? (
-                                    "Select tasks to continue"
-                                ) : (
-                                    <>Confirm {selectedTasks.length} {selectedTasks.length === 1 ? 'Task' : 'Tasks'} <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
-                                )}
-                            </button>
+                            {selectedTasks.length === 0 ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="w-full bg-gray-100 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2"
+                                >
+                                    Select tasks to continue
+                                </button>
+                            ) : (
+                                (() => {
+                                    const currentPrice = selectedDuration === 1 ? (bookingWorker.pricingTier?.oneHour || 200) :
+                                                         selectedDuration === 2 ? (bookingWorker.pricingTier?.twoHours || 450) :
+                                                         (bookingWorker.pricingTier?.threeHours || 700);
+
+                                    return (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wide mb-1">Total Payable</p>
+                                                    <p className="text-xl font-bold text-slate-900">
+                                                        ₹{currentPrice}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded-lg text-xs font-bold border border-green-200">
+                                                        {selectedDuration} {selectedDuration === 1 ? 'Hour' : 'Hours'} Shift
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <CheckoutButton
+                                                amount={currentPrice}
+                                                servantId={bookingWorker._id}
+                                                onSuccess={() => {
+                                                    toast.success("Shift booked successfully!");
+                                                    setBookingWorker(null);
+                                                    setSelectedTasks([]);
+                                                    setSelectedDuration(1);
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })()
+                            )}
                         </div>
                     </div>
                 </div>
