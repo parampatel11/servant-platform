@@ -1,0 +1,120 @@
+"use client";
+
+import React, { useState } from "react";
+import axios from "axios";
+import { CreditCard, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
+
+interface CheckoutProps {
+    amount: number;
+    servantId: string;
+    onSuccess?: (paymentData: any) => void;
+}
+
+// Utility to dynamically load the Razorpay script
+const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
+
+export default function CheckoutButton({ amount, servantId, onSuccess }: CheckoutProps) {
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handlePayment = async () => {
+        setIsProcessing(true);
+
+        try {
+            // 1. Load the Razorpay SDK
+            const isScriptLoaded = await loadRazorpayScript();
+            if (!isScriptLoaded) {
+                toast.error("Failed to load Razorpay SDK. Check your connection.");
+                setIsProcessing(false);
+                return;
+            }
+
+            // 2. Ask backend to create an order
+            const orderResponse = await axios.post(
+                "http://localhost:8000/api/payment/create-order",
+                { amount, servantId },
+                { withCredentials: true }
+            );
+
+            const orderData = orderResponse.data.order;
+
+            // 3. Configure the Razorpay Popup
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "ShiftServe Platform",
+                description: "Booking Payment",
+                order_id: orderData.id,
+                handler: async function (response: any) {
+                    // 4. Verify payment on the backend after successful transaction
+                    try {
+                        const verifyResponse = await axios.post(
+                            "http://localhost:8000/api/payment/verify",
+                            {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            },
+                            { withCredentials: true }
+                        );
+
+                        toast.success("Payment verified successfully!");
+                        if (onSuccess) onSuccess(verifyResponse.data.payment);
+                        
+                    } catch (err) {
+                        toast.error("Payment verification failed. Contact support.");
+                    }
+                },
+                prefill: {
+                    name: "Client Name", // You can pass actual user details here via props
+                    email: "client@shiftserve.com",
+                    contact: "9999999999"
+                },
+                theme: {
+                    color: "#22c55e" // Tailwind green-500 to match the client UI
+                }
+            };
+
+            // 5. Open the popup
+            const paymentObject = new (window as any).Razorpay(options);
+            paymentObject.on("payment.failed", function (response: any) {
+                toast.error(response.error.description || "Payment failed");
+            });
+            
+            paymentObject.open();
+
+        } catch (error) {
+            toast.error("Unable to initiate checkout. Please try again.");
+            console.error(error);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className="w-full bg-green-500 hover:bg-green-400 text-slate-900 font-bold py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+        >
+            {isProcessing ? (
+                <>
+                    <Loader2 className="animate-spin" size={18} /> Processing...
+                </>
+            ) : (
+                <>
+                    <CreditCard size={18} /> Pay ₹{amount} & Book Now
+                </>
+            )}
+        </button>
+    );
+}
