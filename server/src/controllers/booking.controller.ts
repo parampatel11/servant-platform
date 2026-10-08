@@ -1,6 +1,8 @@
 import { Response } from "express";
 import { SessionInterface } from "../middlewares/auth.middleware";
-import { TryError } from "../utils/error";
+import { CatchError, TryError } from "../utils/error";
+import BookingModel from "../models/booking.model";
+import AuthModel from "../models/auth.model";
 
 export const handleBookingResponse = async (req: SessionInterface, res: Response)=>{
     try{
@@ -14,8 +16,40 @@ export const handleBookingResponse = async (req: SessionInterface, res: Response
         if(!bookingId || !action){
             throw TryError("Booking ID and action are required", 400)
         }
+
+        const booking = await BookingModel.findById(bookingId)
+
+        if(!booking){
+            throw TryError("Booking not found", 404)
+        }
+
+        if(booking.servant.toString() !== req.session.id.toString()){
+            throw TryError("Not authorized to respond to this booking",403)
+        }
+
+        if(action === "rejected"){
+            booking.status = "rejected"
+            await booking.save()
+
+            return res.status(200).json({ message: "Booking rejected, client refund: initiated"})
+        }
+
+        if(action === "accept"){
+            booking.status = "on_the_way"
+            booking.travelStartTime = new Date()
+            await booking.save()
+
+            await AuthModel.findByIdAndDelete(booking.servant,{$set:{isAvailable: false}})
+
+            return res.status(200).json({
+                message: "Booking accepted. 10-minutes travel timer started.",
+                travelStartTime: booking.travelStartTime
+            })
+        }
+
+        throw TryError("Invalid action type", 400)
     }
     catch(err){
-
+        CatchError(err,res,"Failed to handle booking response")
     }
 }
