@@ -415,6 +415,7 @@ export default function ClientSearch() {
                                             </div>
                                             <CheckoutButton
                                                 amount={currentPrice}
+                                                durationHours={selectedDuration}
                                                 servantId={bookingWorker._id}
                                                 onSuccess={() => {
                                                     toast.success("Shift booked successfully!");
