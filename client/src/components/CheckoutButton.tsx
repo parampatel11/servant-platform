@@ -8,10 +8,10 @@ import toast from "react-hot-toast";
 interface CheckoutProps {
     amount: number;
     servantId: string;
+    durationHours: number;
     onSuccess?: (paymentData: any) => void;
 }
 
-// Utility to dynamically load the Razorpay script
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
         const script = document.createElement("script");
@@ -22,14 +22,13 @@ const loadRazorpayScript = () => {
     });
 };
 
-export default function CheckoutButton({ amount, servantId, onSuccess }: CheckoutProps) {
+export default function CheckoutButton({ amount, servantId, durationHours, onSuccess }: CheckoutProps) {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handlePayment = async () => {
         setIsProcessing(true);
 
         try {
-            // 1. Load the Razorpay SDK
             const isScriptLoaded = await loadRazorpayScript();
             if (!isScriptLoaded) {
                 toast.error("Failed to load Razorpay SDK. Check your connection.");
@@ -37,16 +36,14 @@ export default function CheckoutButton({ amount, servantId, onSuccess }: Checkou
                 return;
             }
 
-            // 2. Ask backend to create an order
             const orderResponse = await axios.post(
                 "http://localhost:8000/api/payment/create-order",
-                { amount, servantId },
+                { amount, servantId, durationHours },
                 { withCredentials: true }
             );
 
             const orderData = orderResponse.data.order;
 
-            // 3. Configure the Razorpay Popup
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
                 amount: orderData.amount,
@@ -55,7 +52,6 @@ export default function CheckoutButton({ amount, servantId, onSuccess }: Checkou
                 description: "Booking Payment",
                 order_id: orderData.id,
                 handler: async function (response: any) {
-                    // 4. Verify payment on the backend after successful transaction
                     try {
                         const verifyResponse = await axios.post(
                             "http://localhost:8000/api/payment/verify",
@@ -75,16 +71,15 @@ export default function CheckoutButton({ amount, servantId, onSuccess }: Checkou
                     }
                 },
                 prefill: {
-                    name: "Client Name", // You can pass actual user details here via props
+                    name: "Client Name",
                     email: "client@shiftserve.com",
                     contact: "9999999999"
                 },
                 theme: {
-                    color: "#22c55e" // Tailwind green-500 to match the client UI
+                    color: "#22c55e"
                 }
             };
 
-            // 5. Open the popup
             const paymentObject = new (window as any).Razorpay(options);
             paymentObject.on("payment.failed", function (response: any) {
                 toast.error(response.error.description || "Payment failed");
