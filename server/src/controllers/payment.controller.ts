@@ -4,6 +4,7 @@ import crypto from "crypto"
 import { SessionInterface } from "../middlewares/auth.middleware";
 import { CatchError, TryError } from "../utils/error";
 import PaymentModel from "../models/payment.model";
+import BookingModel from "../models/booking.model";
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID!,
@@ -16,9 +17,9 @@ export const createOrder = async (req: SessionInterface, res: Response) => {
             throw TryError("Unauthorized to create payment", 401)
         }
 
-        const { amount, servantId } = req.body
+        const { amount, servantId, durationHours } = req.body
 
-        if (!amount) {
+        if (!amount || !durationHours) {
             throw TryError("Amount is required", 400)
         }
 
@@ -36,6 +37,7 @@ export const createOrder = async (req: SessionInterface, res: Response) => {
             razorpayOrderId: order.id,
             amount: amount,
             currency: "INR",
+            durationHours: durationHours,
             status: "pending"
         })
 
@@ -90,12 +92,25 @@ export const verifyPayment = async (req: SessionInterface, res: Response) => {
             { new: true }
         )
 
+        if(!updatedPayment){
+            throw TryError("Payment record not found", 404)
+        }
+
+        const newBooking = await BookingModel.create({
+            client: updatedPayment.client,
+            servant: updatedPayment.servant,
+            payment: updatedPayment._id,
+            durationHours: updatedPayment.durationHours,
+            status: "pending"
+        })
+
         res.status(200).json({
-            message: "Payment verified successfully",
-            payment: updatedPayment
+            message: "Payment verified and booking created successfully",
+            payment: updatedPayment,
+            booking: newBooking
         })
     }
     catch (err: unknown) {
-        CatchError(err, res, "Failed to verify payment")
+        CatchError(err, res, "Failed to verify payment and create booking")
     }
 }
