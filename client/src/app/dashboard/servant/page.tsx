@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { 
     HeartHandshake, Mail, Phone, Crown, X, Sparkles, CheckCircle2, 
-    Briefcase, BadgeCheck, Wallet, Calendar, Loader2, ArrowRight
+    Briefcase, BadgeCheck, Wallet, Calendar, Loader2, ArrowRight,
+    Clock, Check, AlertCircle, User
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -14,29 +15,76 @@ import ServantRequests from "@/src/components/ServantRequests";
 import ServantSupport from "@/src/components/ServantSupport";
 import ServantOnboardingModal from "@/src/components/ServantOnboardingModal";
 
+interface ClientInfo {
+    _id: string;
+    fullname?: string;
+    name?: string;
+    mobile?: string;
+}
+
+interface PendingBooking {
+    _id: string;
+    durationHours: number;
+    client: ClientInfo;
+    status: string;
+    createdAt: string;
+}
+
 export default function ServantDashboard() {
-    console.log("THE MODAL COMPONENT IS TRYING TO RENDER!");
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [pendingBookings, setPendingBookings] = useState<PendingBooking[]>([]);
+    const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+
+    const fetchUserProfile = async () => {
+        try {
+            const response = await axios.get("http://localhost:8000/api/auth/me", {
+                withCredentials: true 
+            });
+            setUserProfile(response.data.user || response.data);
+        } catch (error) {
+            console.error("Error fetching profile:", error);
+            toast.error("Failed to load profile data.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchPendingBookings = async () => {
+        try {
+            const response = await axios.get("http://localhost:8000/api/booking/pending", {
+                withCredentials: true
+            });
+            setPendingBookings(response.data.bookings || []);
+        } catch (error) {
+            console.error("Error fetching bookings:", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await axios.get("http://localhost:8000/api/auth/me", {
-                    withCredentials: true 
-                });
-                setUserProfile(response.data.user || response.data);
-            } catch (error) {
-                console.error("Error fetching profile:", error);
-                toast.error("Failed to load profile data.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchUserProfile();
+        fetchPendingBookings();
+        const interval = setInterval(fetchPendingBookings, 5000);
+        return () => clearInterval(interval);
     }, []);
+
+    const handleBookingResponse = async (bookingId: string, action: "accept" | "reject") => {
+        setProcessingBookingId(bookingId);
+        try {
+            const response = await axios.post(
+                `http://localhost:8000/api/booking/respond/${bookingId}`,
+                { action },
+                { withCredentials: true }
+            );
+            toast.success(response.data.message || `Booking ${action}ed`);
+            setPendingBookings((prev) => prev.filter((b) => b._id !== bookingId));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || `Failed to ${action} booking`);
+        } finally {
+            setProcessingBookingId(null);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -55,17 +103,80 @@ export default function ServantDashboard() {
         );
     }
 
-    console.log("FULL USER STATE:", userProfile);
-    console.log("IS ONBOARDED VALUE:", userProfile?.isOnBoarded);
-
     return (
-        <div className="w-full">
+        <div className="w-full space-y-6">
             {userProfile && userProfile.isOnBoarded === false && (
                 <ServantOnboardingModal onComplete={(updatedUser) => setUserProfile(updatedUser)} />
             )}
+
+            {pendingBookings.length > 0 && (
+                <div className="w-full space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                        </span>
+                        <h2 className="text-sm font-extrabold tracking-wider uppercase text-zinc-900">
+                            Incoming Shift Requests ({pendingBookings.length})
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {pendingBookings.map((booking) => (
+                            <div 
+                                key={booking._id} 
+                                className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-5 rounded-2xl shadow-lg border border-yellow-500/30 flex flex-col justify-between gap-4 relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                                <div className="flex items-start justify-between gap-3 relative z-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-11 h-11 rounded-xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center text-yellow-400 font-black text-base">
+                                            <User size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-white capitalize leading-snug">
+                                                {booking.client?.fullname || booking.client?.name || "Client"}
+                                            </h3>
+                                            <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5">
+                                                <Clock size={13} className="text-yellow-400" />
+                                                <span>{booking.durationHours} Hour Shift Request</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-md border border-yellow-500/30">
+                                        Immediate
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 pt-2 border-t border-white/10 relative z-10">
+                                    <button
+                                        onClick={() => handleBookingResponse(booking._id, "reject")}
+                                        disabled={processingBookingId === booking._id}
+                                        className="flex-1 py-2.5 px-4 rounded-xl bg-white/5 hover:bg-red-500/20 text-zinc-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 font-semibold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <X size={15} /> Reject
+                                    </button>
+                                    <button
+                                        onClick={() => handleBookingResponse(booking._id, "accept")}
+                                        disabled={processingBookingId === booking._id}
+                                        className="flex-1 py-2.5 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md hover:shadow-yellow-500/20 active:scale-95 disabled:opacity-50"
+                                    >
+                                        {processingBookingId === booking._id ? (
+                                            <Loader2 size={15} className="animate-spin" />
+                                        ) : (
+                                            <Check size={15} />
+                                        )}
+                                        Accept Shift
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col lg:flex-row gap-5">
-                
-                {/* LEFT SIDE: Compact Profile Section */}
                 <div className="w-full lg:w-[30%] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-md">
                     <div className="h-20 bg-zinc-900 relative">
                         <div className="absolute -bottom-8 left-6">
@@ -114,7 +225,6 @@ export default function ServantDashboard() {
                     </div>
                 </div>
 
-                {/* RIGHT SIDE: Streamlined Hero Banner */}
                 <div className="w-full lg:w-[70%] bg-zinc-900 rounded-2xl shadow-sm border border-zinc-800 p-6 md:p-8 relative overflow-hidden flex flex-col justify-center">
                     <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
                         <div className="absolute -top-20 -right-20 w-72 h-72 bg-yellow-500 rounded-full blur-[80px]"></div>
@@ -163,13 +273,11 @@ export default function ServantDashboard() {
                 </div>
             </div>
 
-            {/* SEAMLESS SCROLLING SECTIONS */}
             <ServantSearch />
             <ServantPost />
             <ServantRequests />
             <ServantSupport />
 
-            {/* COMPACT SUBSCRIPTION MODAL */}
             {isSubModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div 
