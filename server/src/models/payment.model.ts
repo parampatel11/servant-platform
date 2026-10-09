@@ -35,6 +35,11 @@ const paymentSchema = new Schema({
         default: "INR",
         trim: true
     },
+    durationHours:{
+        type: Number,
+        required: true,
+        default: 1
+    },
     status:{
         type: String,
         enum: ["pending","completed","failed"],
