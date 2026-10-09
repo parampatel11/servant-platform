@@ -1,4 +1,4 @@
-import {Model, Schema, model} from "mongoose"
+import { Schema, model} from "mongoose"
 
 const bookingSchema = new Schema({
     client:{
@@ -36,5 +36,5 @@ const bookingSchema = new Schema({
     }
 },{timestamps:true})
 
-const BookingModel = new Model("booking",bookingSchema)
+const BookingModel = model("booking",bookingSchema)
 export default BookingModel
